@@ -184,60 +184,60 @@ object B_DataPipelines {
       val validSet: LabeledData[T]
   }
 
-  trait Imputing[T, A] { val imputer: ITransform[T, A] }
-
-  trait Normalization[T, A] { val normalizer: ITransform[T, A] }
-
-  trait OneHotEncoding[T, A] { val encoder: ITransform[T, A] }
-
-  class BasicPreprocessing[T, U, V, W] {
-    self: Imputing[T, U] with Normalization[U, V] with OneHotEncoding[V, W] =>
-
-    def |> (t: T): Try[W] = for {
-      u <- imputer |> t
-      v <- normalizer |> u
-      w <- encoder |> v
-    } yield w
-  }
-  sealed trait BloodType
-  case object A extends BloodType
-  case object B extends BloodType
-  case object O extends BloodType
-  case object AB extends BloodType
-
-  case class Human(height: Option[Double], bloodType: BloodType)
-  case class ImputedHuman(height: Double, bloodType: BloodType)
-
-  object HumanExample extends App {
-
-    val basicPreprocessing = new BasicPreprocessing[Seq[Human], Seq[ImputedHuman], Seq[ImputedHuman], Seq[Double]]
-      with Imputing[Seq[Human], Seq[ImputedHuman]]
-      with Normalization[Seq[ImputedHuman], Seq[ImputedHuman]]
-      with OneHotEncoding[Seq[ImputedHuman], Seq[Double]] {
-
-      val imputer = new ITransform[Seq[Human], Seq[ImputedHuman]] {
-        override def |> : PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] = new PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] {
-          override def isDefinedAt(t: Seq[Human]): Boolean = self.|>.isDefinedAt(t)
-          override def apply(t: T): Try[B] = self.|>(t).map(f) //6
-        }
-      }
-
-      val normalizer = ???
-
-      val bloodVector = Vector(A, B, O, AB)
-      val encoder = ???
-
-      val sampleInput = Seq(
-        Human(Some(170.0), A),
-        Human(None, A),
-        Human(Some(150.0), B),
-        Human(Some(155.0), AB)
-      )
-
-      basicPreprocessing |> sampleInput match {
-        case Success(res) => println(s"result = ${res.toString}")
-        case Failure(e) => println(s"error = $e")
-      }
-
-    }
+//  trait Imputing[T, A] { val imputer: ITransform[T, A] }
+//
+//  trait Normalization[T, A] { val normalizer: ITransform[T, A] }
+//
+//  trait OneHotEncoding[T, A] { val encoder: ITransform[T, A] }
+//
+//  class BasicPreprocessing[T, U, V, W] {
+//    self: Imputing[T, U] with Normalization[U, V] with OneHotEncoding[V, W] =>
+//
+//    def |> (t: T): Try[W] = for {
+//      u <- imputer |> t
+//      v <- normalizer |> u
+//      w <- encoder |> v
+//    } yield w
+//  }
+//  sealed trait BloodType
+//  case object A extends BloodType
+//  case object B extends BloodType
+//  case object O extends BloodType
+//  case object AB extends BloodType
+//
+//  case class Human(height: Option[Double], bloodType: BloodType)
+//  case class ImputedHuman(height: Double, bloodType: BloodType)
+//
+//  object HumanExample extends App {
+//
+//    val basicPreprocessing = new BasicPreprocessing[Seq[Human], Seq[ImputedHuman], Seq[ImputedHuman], Seq[Double]]
+//      with Imputing[Seq[Human], Seq[ImputedHuman]]
+//      with Normalization[Seq[ImputedHuman], Seq[ImputedHuman]]
+//      with OneHotEncoding[Seq[ImputedHuman], Seq[Double]] {
+//
+//      val imputer = new ITransform[Seq[Human], Seq[ImputedHuman]] {
+//        override def |> : PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] = new PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] {
+//          override def isDefinedAt(t: Seq[Human]): Boolean = self.|>.isDefinedAt(t)
+//          override def apply(t: T): Try[B] = self.|>(t).map(f) //6
+//        }
+//      }
+//
+//      val normalizer = ???
+//
+//      val bloodVector = Vector(A, B, O, AB)
+//      val encoder = ???
+//
+//      val sampleInput = Seq(
+//        Human(Some(170.0), A),
+//        Human(None, A),
+//        Human(Some(150.0), B),
+//        Human(Some(155.0), AB)
+//      )
+//
+//      basicPreprocessing |> sampleInput match {
+//        case Success(res) => println(s"result = ${res.toString}")
+//        case Failure(e) => println(s"error = $e")
+//      }
+//
+//    }
 }

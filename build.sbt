@@ -2,7 +2,7 @@ organization := "com.inkenkun.x1"
 name := "scala-for-ml-exercise"
 version := "0.0.1"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.7"
 
 scalacOptions ++= Seq(
   "-encoding", "UTF-8",   // source files are in UTF-8
@@ -16,11 +16,13 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "co.theasi"            %% "plotly"        % "0.2.0",
+//  "co.theasi"            %% "plotly"        % "0.2.0",
   "com.github.tototoshi" %% "scala-csv"     % "1.3.5",
   "log4j"                 % "log4j"         % "1.2.17",
   "org.apache.commons"    % "commons-math3" % "3.6.1",
+  "org.scalanlp"         %% "breeze"        % "0.13.2",
+  "org.scalanlp"         %% "breeze-viz"    % "0.13.2",
   "org.typelevel"        %% "cats-core"     % "0.9.0",
-  "org.vegas-viz"        %% "vegas"         % "0.3.11",
+//  "org.vegas-viz"        %% "vegas"         % "0.3.11",
   "org.scalatest"        %% "scalatest"     % "3.0.1" % "test"
 )

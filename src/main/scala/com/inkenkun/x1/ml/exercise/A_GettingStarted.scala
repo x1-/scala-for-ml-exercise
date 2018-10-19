@@ -2,42 +2,42 @@ package com.inkenkun.x1.ml.exercise
 
 import java.io.File
 import com.github.tototoshi.csv._
-import vegas._
-import vegas.render.WindowRenderer._
+//import vegas._
+//import vegas.render.WindowRenderer._
 
 import scala.util.Random
 
 object A_GettingStarted {
   def main(args: Array[String]): Unit = {
-    val reader = CSVReader.open(new File("IRIS.csv"))
-    val data: Vector[Vector[Double]] = reader.all().tail.map(v => v.map(_.toDouble).toVector).toVector
-    println(data.head)
-
-    val labels = kMeans(3, data, 10)
-    println(labels)
-
-    val reader2 = CSVReader.open(new File("IRIS.csv"))
-    val data2 = reader2.allWithHeaders().zipWithIndex.map { case (m, n) =>
-      m.mapValues(_.toDouble) + ("cluster" -> labels(n))
-    }
-    println(data2)
-    val plot = Vegas("Iris").
-      withData(data2).
-      encodeX("SepalLengthCm", Quant).
-      encodeY("SepalWidthCm", Quant).
-      encodeColor(field="cluster", dataType=Nominal).
-      mark(Point)
-    plot.show
-
-    val reader3 = CSVReader.open(new File("IRIS_label.csv"))
-    val view = reader3.allWithHeaders()
-    val plot2 = Vegas("Iris").
-      withData(view).
-      encodeX("SepalLengthCm", Quant).
-      encodeY("SepalWidthCm", Quant).
-      encodeColor(field="Species", dataType=Nominal).
-    mark(Point)
-    plot2.show
+//    val reader = CSVReader.open(new File("IRIS.csv"))
+//    val data: Vector[Vector[Double]] = reader.all().tail.map(v => v.map(_.toDouble).toVector).toVector
+//    println(data.head)
+//
+//    val labels = kMeans(3, data, 10)
+//    println(labels)
+//
+//    val reader2 = CSVReader.open(new File("IRIS.csv"))
+//    val data2 = reader2.allWithHeaders().zipWithIndex.map { case (m, n) =>
+//      m.mapValues(_.toDouble) + ("cluster" -> labels(n))
+//    }
+//    println(data2)
+//    val plot = Vegas("Iris").
+//      withData(data2).
+//      encodeX("SepalLengthCm", Quant).
+//      encodeY("SepalWidthCm", Quant).
+//      encodeColor(field="cluster", dataType=Nominal).
+//      mark(Point)
+//    plot.show
+//
+//    val reader3 = CSVReader.open(new File("IRIS_label.csv"))
+//    val view = reader3.allWithHeaders()
+//    val plot2 = Vegas("Iris").
+//      withData(view).
+//      encodeX("SepalLengthCm", Quant).
+//      encodeY("SepalWidthCm", Quant).
+//      encodeColor(field="Species", dataType=Nominal).
+//    mark(Point)
+//    plot2.show
 
 //    val commonOptions = ScatterOptions()
 //      .mode(ScatterMode.Marker)
