@@ -24,12 +24,12 @@ object C2_LinearRegression {
     val X = df(::, 0 to 12)
 
     // 犯罪率をプロットしてみます
-    val f = Figure()
-    val p = f.subplot(0)
-    p += plot(X(::, 0), y, '.')
-    p.xlabel = "per capita crime rate by town"
-    p.ylabel = "Median value of owner-occupied homes in $1000's"
-    f.saveas("BostonHousing.png")
+//    val f = Figure()
+//    val p = f.subplot(0)
+//    p += plot(X(::, 0), y, '.')
+//    p.xlabel = "per capita crime rate by town"
+//    p.ylabel = "Median value of owner-occupied homes in $1000's"
+//    f.saveas("BostonHousing.png")
 
     // 正規化します
     val stdX = normalize(X(::, *))
@@ -38,8 +38,30 @@ object C2_LinearRegression {
     val omega = ω(stdX, y.toDenseMatrix.t)
     println(omega)
 
-//    val y2 = (omega * stdX) + DenseVector.fill(y.length){0.5}.toDenseMatrix
+    println(stdX)
+
+    val y2 = stdX(*, ::) * omega.toDenseVector
+    val yy = sum(y2(*, ::)) + DenseVector.fill(stdX.rows){0.5}
+    println(yy)
+
+//    val dm = DenseMatrix(
+//      (1.0,2.0,3.0),
+//      (4.0,5.0,6.0))
+//    val res = dm(*, ::) + DenseVector(3.0, 4.0, 0.0)
+//    println(res)
+
+
+    val f = Figure()
+    val p = f.subplot(0)
+    p += plot(X(::, 0), y, '.')
+    p += plot(X(::, 0), yy, '.')
+    p.xlabel = "per capita crime rate by town"
+    p.ylabel = "Median value of owner-occupied homes in $1000's"
+    //    f.saveas("BostonHousing.png")
+
+    f.saveas("pred_BostonHousing.png")
   }
+
   // パラメータの探索を実装します
   def ω(X: DenseMatrix[Double], y: DenseMatrix[Double]): DenseMatrix[Double] = {
     val a = X.t * X
