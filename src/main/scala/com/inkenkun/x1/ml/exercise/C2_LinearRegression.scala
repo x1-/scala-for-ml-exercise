@@ -13,6 +13,14 @@ import com.github.tototoshi.csv._
 
 import scala.util.Random
 
+/**
+  * Breeze
+  * Breeze is a library for numerical processing. It aims to be generic, clean, and powerful without sacrificing (much) efficiency.
+  * 
+  * https://github.com/scalanlp/breeze
+  * https://github.com/scalanlp/breeze/wiki/Quickstart
+  * https://github.com/scalanlp/breeze/wiki/Linear-Algebra-Cheat-Sheet
+  */
 object C2_LinearRegression {
 
   def main(args: Array[String]): Unit = {
