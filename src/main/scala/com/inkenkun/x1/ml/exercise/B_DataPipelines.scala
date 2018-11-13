@@ -1,38 +1,16 @@
 package com.inkenkun.x1.ml.exercise
 
-import scala.util.Try
+import cats._
+import cats.data._
+import cats.implicits._
 import org.scalaml.Predef.Context._
 import org.scalaml.filtering
 import org.scalaml.util.MapUtils.Counter
 import org.scalaml.Predef._
 
+import scala.util.{Failure, Success, Try}
+
 object B_DataPipelines {
-
-  trait ITransform[T, A] { self =>
-    def |> : PartialFunction[T, Try[A]] //2
-    def map[B](f: A => B): ITransform[T, B] = new ITransform[T,B] {
-      override def |> : PartialFunction[T, Try[B]] = new PartialFunction[T, Try[B]] {
-        override def isDefinedAt(t: T): Boolean = self.|>.isDefinedAt(t)
-        override def apply(t: T): Try[B] = self.|>(t).map(f) //6
-      }
-    }
-    def flatMap[B](
-      f: A => ITransform[T, B]
-    ): ITransform[T, B] = new ITransform[T, B] {
-      override def |> : PartialFunction[T, Try[B]] = new PartialFunction[T, Try[B]] {
-        override def isDefinedAt(t: T): Boolean = self.|>.isDefinedAt(t)
-        override def apply(t: T): Try[B] = self.|>(t).flatMap(f(_).|>(t))
-      }
-    }
-
-    def andThen[B](tr: ITransform[A, B]): ITransform[T, B] = new ITransform[T, B] {
-      override def |> : PartialFunction[T, Try[B]] = new PartialFunction[T, Try[B]] {
-        override def isDefinedAt(t: T): Boolean =
-            self.|>.isDefinedAt(t) && tr.|>.isDefinedAt(self.|>(t).get)
-        override def apply(t: T):Try[B] = tr.|>(self.|>(t).get)
-      }
-    }
-  }
 
   trait Config
   case class ConfigInt(iParam: Int) extends Config
@@ -57,11 +35,11 @@ object B_DataPipelines {
   }
 
   trait Sampling[T,A] { val sampler: ETransform[T, A] }
-  trait Normalization[T,A] { val normalizer: ETransform[T, A] }
+  trait NormalizationE[T,A] { val normalizer: ETransform[T, A] }
   trait Aggregation[T,A] { val aggregator: ETransform[T, A] }
 
   class Workflow[T,U,V,W] { self: Sampling[T,U]
-    with Normalization[U,V] with Aggregation[V,W] =>
+    with NormalizationE[U,V] with Aggregation[V,W] =>
     def |> (t: T): Try[W] = for {
       u <- sampler |> t
       v <- normalizer |> u
@@ -75,24 +53,24 @@ object B_DataPipelines {
   val samples = 100; val normRatio = 10; val splits = 4
   val workflow = new Workflow[DblF, DblVec, DblVec, Int]
     with Sampling[DblF, DblVec]
-    with Normalization[DblVec, DblVec]
+    with NormalizationE[DblVec, DblVec]
     with Aggregation[DblVec, Int] {
-    val sampler = new ETransform[DblF, DblVec](config = ConfigInt(samples)) {
-      override def |> : PartialFunction[DblF, Try[DblVec]] = {
-        case f =>
-          Try(Vector.tabulate(samples)(n => f(n/samples)))
+      val sampler = new ETransform[DblF, DblVec](config = ConfigInt(samples)) {
+        override def |> : PartialFunction[DblF, Try[DblVec]] = {
+          case f =>
+            Try(Vector.tabulate(samples)(n => f(n/samples)))
+        }
+      }
+      val normalizer = new ETransform[DblVec, DblVec](config = ConfigInt(normRatio)) {
+        override def |> : PartialFunction[DblVec, Try[DblVec]] = ???
+      }
+      val aggregator = new ETransform[DblVec, Int](config = ConfigInt(splits)) {
+        override def |> : PartialFunction[DblVec, Try[Int]] = {
+          case x: DblVec if x.nonEmpty =>
+            Try(x.indices.find(x(_) == 1.0).getOrElse(-1))
+        }
       }
     }
-    val normalizer = new ETransform[DblVec, DblVec](config = ConfigInt(normRatio)) {
-      override def |> : PartialFunction[DblVec, Try[DblVec]] = ???
-    }
-    val aggregator = new ETransform[DblVec, Int](config = ConfigInt(splits)) {
-      override def |> : PartialFunction[DblVec, Try[Int]] = {
-        case x: DblVec if x.nonEmpty =>
-          Try(x.indices.find(x(_) == 1.0).getOrElse(-1))
-      }
-    }
-  }
 
 //  trait ToDouble[T] { def apply(t: T): Double }
 
@@ -183,61 +161,98 @@ object B_DataPipelines {
       val trainSet: LabeledData[T]
       val validSet: LabeledData[T]
   }
+}
 
-//  trait Imputing[T, A] { val imputer: ITransform[T, A] }
-//
-//  trait Normalization[T, A] { val normalizer: ITransform[T, A] }
-//
-//  trait OneHotEncoding[T, A] { val encoder: ITransform[T, A] }
-//
-//  class BasicPreprocessing[T, U, V, W] {
-//    self: Imputing[T, U] with Normalization[U, V] with OneHotEncoding[V, W] =>
-//
-//    def |> (t: T): Try[W] = for {
-//      u <- imputer |> t
-//      v <- normalizer |> u
-//      w <- encoder |> v
-//    } yield w
-//  }
-//  sealed trait BloodType
-//  case object A extends BloodType
-//  case object B extends BloodType
-//  case object O extends BloodType
-//  case object AB extends BloodType
-//
-//  case class Human(height: Option[Double], bloodType: BloodType)
-//  case class ImputedHuman(height: Double, bloodType: BloodType)
-//
-//  object HumanExample extends App {
-//
-//    val basicPreprocessing = new BasicPreprocessing[Seq[Human], Seq[ImputedHuman], Seq[ImputedHuman], Seq[Double]]
-//      with Imputing[Seq[Human], Seq[ImputedHuman]]
-//      with Normalization[Seq[ImputedHuman], Seq[ImputedHuman]]
-//      with OneHotEncoding[Seq[ImputedHuman], Seq[Double]] {
-//
-//      val imputer = new ITransform[Seq[Human], Seq[ImputedHuman]] {
-//        override def |> : PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] = new PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] {
-//          override def isDefinedAt(t: Seq[Human]): Boolean = self.|>.isDefinedAt(t)
-//          override def apply(t: T): Try[B] = self.|>(t).map(f) //6
-//        }
-//      }
-//
-//      val normalizer = ???
-//
-//      val bloodVector = Vector(A, B, O, AB)
-//      val encoder = ???
-//
-//      val sampleInput = Seq(
-//        Human(Some(170.0), A),
-//        Human(None, A),
-//        Human(Some(150.0), B),
-//        Human(Some(155.0), AB)
-//      )
-//
-//      basicPreprocessing |> sampleInput match {
-//        case Success(res) => println(s"result = ${res.toString}")
-//        case Failure(e) => println(s"error = $e")
-//      }
-//
-//    }
+trait Imputing[T, A] { val imputer: ITransform[T, A] }
+
+trait Normalization[T, A] { val normalizer: ITransform[T, A] }
+
+trait OneHotEncoding[T, A] { val encoder: ITransform[T, A] }
+
+class BasicPreprocessing[T, U, V, W] {
+  self: Imputing[T, U] with Normalization[U, V] with OneHotEncoding[V, W] =>
+
+  def |> (t: T): Try[W] = for {
+    u <- imputer |> t
+    v <- normalizer |> u
+    w <- encoder |> v
+  } yield w
+}
+sealed trait BloodType
+case object A extends BloodType
+case object B extends BloodType
+case object O extends BloodType
+case object AB extends BloodType
+
+case class Human(height: Option[Double], bloodType: BloodType)
+case class ImputedHuman(height: Double, bloodType: BloodType)
+
+object HumanExample extends App {
+
+  import cats.Monoid
+
+  val basicPreprocessing = new BasicPreprocessing[Seq[Human], Seq[ImputedHuman], Seq[ImputedHuman], Seq[Vector[Double]]]
+    with Imputing[Seq[Human], Seq[ImputedHuman]]
+    with Normalization[Seq[ImputedHuman], Seq[ImputedHuman]]
+    with OneHotEncoding[Seq[ImputedHuman], Seq[Vector[Double]]] {
+
+
+    implicit val heightMonoid: Monoid[Human] = new Monoid[Human] {
+      override def empty: Human = Human(None, O)
+      override def combine(x: Human, y: Human): Human = Human(x.height |+| y.height, x.bloodType)
+    }
+
+    val imputer = new ITransform[Seq[Human], Seq[ImputedHuman]] {
+      override def |> : PartialFunction[Seq[Human], Try[Seq[ImputedHuman]]] = {
+        case humans if humans.nonEmpty =>
+          val meanHeight = humans.toList.combineAll(heightMonoid).height.map(_ / humans.count(_.height.isDefined)).getOrElse(0d)
+          Try(humans.map { h =>
+            ImputedHuman(
+              h.height.getOrElse(meanHeight),
+              h.bloodType
+            )
+          })
+      }
+    }
+
+    def heightNormalization(x: Double, max: Double, min: Double): Double =
+      (x - min) / (max - min)
+
+    val normalizer = new ITransform[Seq[ImputedHuman], Seq[ImputedHuman]] {
+      override def |> : PartialFunction[Seq[ImputedHuman], Try[Seq[ImputedHuman]]] = {
+        case humans if humans.nonEmpty =>
+          val max = humans.maxBy(_.height)
+          val min = humans.minBy(_.height)
+          Try(humans.map { h =>
+            h.copy(
+              height = heightNormalization(h.height, max.height, min.height)
+            )
+          })
+
+      }
+    }
+
+    val bloodVector = Vector(A, B, O, AB)
+    val encoder = new ITransform[Seq[ImputedHuman], Seq[Vector[Double]]] {
+      override def |> : PartialFunction[Seq[ImputedHuman], Try[Seq[Vector[Double]]]] = {
+        case humans if humans.nonEmpty =>
+          Try(humans.map { h =>
+            h.height +: bloodVector.map(b => if (b == h.bloodType) 1.0 else 0.0)
+          })
+      }
+    }
+  }
+
+  val sampleInput = Seq(
+    Human(Some(170.0), A),
+    Human(None, A),
+    Human(Some(150.0), B),
+    Human(Some(155.0), AB)
+  )
+
+  basicPreprocessing |> sampleInput match {
+    case Success(res) => println(s"result = ${res.toString}")
+    case Failure(e) => println(s"error = $e")
+  }
+
 }
