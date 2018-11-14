@@ -33,33 +33,37 @@ object Main {
 //    val ndm = DenseMatrix.horzcat(dm, DenseVector(9.0, 8.0).toDenseMatrix.t)
 //    println(ndm)
 
+    val xMatrix = trans(trans(housingParametersVectors.toExpVector.toArray).map(v => normalized(v)))
+    val yVec    = housingParametersVectors.toTargetVector.toArray
+    val multi2 = LinearLikeliRegression()
+    val params2 = multi2.train(
+      xMatrix,
+      yVec
+    )
+    println("weights:")
+    params2.foreach(println)
+
+
     val df: DenseMatrix[Double] = csvread(new File("data/housing.csv"), skipLines = 1)
     val X = df(::, 0 to 12)
     val targetY = df(::, 13)
-    val stdX: DenseMatrix[Double] = normalize(X(::, *))
-
-    val multi = LinearLikeliRegression(iterationNum = 1000)
-    val params3 = multi.train(
-      stdX(*, ::).toIndexedSeq.map(_.inner.toArray).toArray,
-      targetY.toArray
-    )
-    println("weights:")
-    params3.foreach(println)
+//    val stdX: DenseMatrix[Double] = normalize(X(::, *))
+    val stdX: DenseMatrix[Double] = new DenseMatrix(xMatrix.length, xMatrix.head.length, xMatrix.flatten)
 
 
-    val ps: DenseVector[Double] = new DenseVector(params3)
+
+    val ps: DenseVector[Double] = new DenseVector(params2)
     val ones = DenseVector.ones[Double](stdX.rows)
     val xss = DenseMatrix.horzcat(ones.toDenseMatrix.t, stdX(::, 0 to 12))
     xss(*, ::) *= ps
 
     val y = sum(xss, Axis._1)
-    println(y)
 
     // プロットしてみます
     val f2 = Figure()
     val p = f2.subplot(0)
-    p += plot(stdX(::, 6), targetY, '.')
-    p += plot(stdX(::, 6), y, '.')
+    p += plot(stdX(::, 1), targetY, '.')
+    p += plot(stdX(::, 1), y, '.')
     p.xlabel = "x1"
     p.ylabel = "y"
     f2.saveas("housing.png")
@@ -123,5 +127,39 @@ object Main {
     p.ylabel = "Salary"
     f.saveas("Salary_Data.png")
 
+  }
+
+  private def mean[T](item:Traversable[T])(implicit n:Numeric[T]) = {
+    n.toDouble(item.sum) / item.size.toDouble
+  }
+  private def meanBy[NUM,TYP](items:Traversable[TYP])(ext:TYP => NUM)(implicit n:Numeric[NUM]) = {
+    items.foldLeft(0.0d)((total,item)=>total + n.toDouble(ext(item))) / items.size
+  }
+  private def variance[T](items:Traversable[T])(implicit n:Numeric[T]) : Double = {
+    val itemMean = mean(items)
+    val count = items.size
+    val sumOfSquares = items.foldLeft(0.0d)((total,item)=>{
+      val itemDbl = n.toDouble(item)
+      val square = math.pow(itemDbl - itemMean,2)
+      total + square
+    })
+    sumOfSquares / count.toDouble
+  }
+  private def stddev[T](items:Traversable[T])(implicit n:Numeric[T]) : Double = {
+    math.sqrt(variance(items))
+  }
+  private def normalized(vec: Array[Double]): Array[Double] = {
+    val xmean = mean(vec)
+    val xstd  = stddev(vec)
+    vec.map(v => (v - xmean)/xstd)
+  }
+
+  private def trans(data: Array[Array[Double]]): Array[Array[Double]] = {
+    val cols = data.head.indices
+    val rows = data.indices
+
+    cols map { i =>
+      rows.map(n => data(n)(i)).toArray
+    } toArray
   }
 }
